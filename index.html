@@ -58,6 +58,46 @@
             border-left: 5px solid #3498db;
         }
 
+        .cache-info {
+            background: #e8f5e8;
+            border: 1px solid #4caf50;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 15px;
+            font-size: 14px;
+        }
+
+        .cache-info h4 {
+            color: #2e7d32;
+            margin-bottom: 10px;
+        }
+
+        .cache-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .cache-stat {
+            background: white;
+            padding: 8px;
+            border-radius: 4px;
+            text-align: center;
+        }
+
+        .cache-stat .label {
+            font-weight: 600;
+            color: #2e7d32;
+            font-size: 12px;
+        }
+
+        .cache-stat .value {
+            color: #1b5e20;
+            font-size: 16px;
+            font-weight: bold;
+        }
+
         .setup-section h2 {
             color: #2c3e50;
             margin-bottom: 20px;
@@ -260,6 +300,10 @@
                 </div>
                 <button onclick="testConnection()" class="convert-btn" style="background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);">Test Connection</button>
                 <div id="connectionStatus"></div>
+                <div id="cacheInfo" class="cache-info" style="display: none;">
+                    <h4>🔄 Cache Status</h4>
+                    <div class="cache-stats" id="cacheStats"></div>
+                </div>
             </div>
 
             <div class="converter-section">
@@ -336,12 +380,57 @@ black, red, white wire"></textarea>
                 if (response.ok) {
                     const data = await response.json();
                     statusDiv.innerHTML = `<div class="status success">✅ Connection successful! Found ${data.rowCount} rows of data.</div>`;
+                    
+                    // Check cache status after successful connection
+                    await checkCacheStatus();
                 } else {
                     const error = await response.text();
                     throw new Error(error);
                 }
             } catch (error) {
                 statusDiv.innerHTML = `<div class="status error">❌ Connection failed: ${error.message}</div>`;
+            }
+        }
+
+        // Check cache status for the current sheet
+        async function checkCacheStatus() {
+            if (!config.sheetId) return;
+            
+            try {
+                const response = await fetch(`/api/cache-status?sheetId=${config.sheetId}`);
+                if (response.ok) {
+                    const data = await response.json();
+                    displayCacheInfo(data);
+                }
+            } catch (error) {
+                console.error('Failed to check cache status:', error);
+            }
+        }
+
+        // Display cache information
+        function displayCacheInfo(cacheData) {
+            const cacheInfo = document.getElementById('cacheInfo');
+            const cacheStats = document.getElementById('cacheStats');
+            
+            if (cacheData.cached) {
+                cacheInfo.style.display = 'block';
+                
+                const stats = [
+                    { label: 'Status', value: '✅ Cached' },
+                    { label: 'Data Size', value: `${Math.round(cacheData.dataSize / 1024)} KB` },
+                    { label: 'Age', value: `${cacheData.age.createdAgo} min` },
+                    { label: 'Last Used', value: `${cacheData.age.lastAccessedAgo} min ago` },
+                    { label: 'Template', value: cacheData.promptTemplate === 'cached' ? '✅ Cached' : '❌ Not cached' }
+                ];
+                
+                cacheStats.innerHTML = stats.map(stat => `
+                    <div class="cache-stat">
+                        <div class="label">${stat.label}</div>
+                        <div class="value">${stat.value}</div>
+                    </div>
+                `).join('');
+            } else {
+                cacheInfo.style.display = 'none';
             }
         }
 
@@ -386,6 +475,9 @@ black, red, white wire"></textarea>
 
                 const data = await response.json();
                 output.textContent = data.result;
+
+                // Update cache status after conversion
+                await checkCacheStatus();
 
             } catch (error) {
                 output.textContent = `Error: ${error.message}`;
