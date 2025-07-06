@@ -1,56 +1,23 @@
 import crypto from 'crypto';
-import fs from 'fs/promises';
-import path from 'path';
 
-// Cache storage - in production, you might want to use Redis or a database
+// Cache storage - in-memory only for serverless compatibility
 const cache = new Map();
-
-// Cache file path for persistence
-const CACHE_FILE = path.join(process.cwd(), '.cache', 'sheets-cache.json');
-
-// Ensure cache directory exists
-async function ensureCacheDir() {
-    try {
-        await fs.mkdir(path.dirname(CACHE_FILE), { recursive: true });
-    } catch (error) {
-        // Directory might already exist
-    }
-}
 
 // Generate hash for data change detection
 function generateHash(data) {
     return crypto.createHash('sha256').update(data).digest('hex');
 }
 
-// Load cache from file
+// Load cache from memory (no persistence in serverless)
 async function loadCache() {
-    try {
-        await ensureCacheDir();
-        const cacheData = await fs.readFile(CACHE_FILE, 'utf8');
-        const parsed = JSON.parse(cacheData);
-        
-        // Convert back to Map
-        cache.clear();
-        for (const [key, value] of Object.entries(parsed)) {
-            cache.set(key, value);
-        }
-        
-        console.log('Cache loaded from file');
-    } catch (error) {
-        console.log('No existing cache found, starting fresh');
-    }
+    console.log('Cache initialized in memory (serverless mode)');
 }
 
-// Save cache to file
+// Save cache to memory (no persistence in serverless)
 async function saveCache() {
-    try {
-        await ensureCacheDir();
-        const cacheData = JSON.stringify(Object.fromEntries(cache));
-        await fs.writeFile(CACHE_FILE, cacheData);
-        console.log('Cache saved to file');
-    } catch (error) {
-        console.error('Failed to save cache:', error);
-    }
+    // In serverless environment, we can't persist to filesystem
+    // Cache will be lost on cold starts, but that's acceptable for this use case
+    console.log('Cache saved to memory');
 }
 
 // Get cached data for a sheet
@@ -102,7 +69,8 @@ async function cleanOldCache() {
         }
     }
     
-    await saveCache();
+    // No need to save since we're in memory-only mode
+    console.log('Cache cleaned, removed old entries');
 }
 
 // Initialize cache on module load
