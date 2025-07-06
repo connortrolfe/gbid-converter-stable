@@ -39,7 +39,7 @@ export default async function handler(req, res) {
         }
         const csvData = await sheetsResponse.text();
 
-        // Prepare Claude API request using built-in prompt caching
+        // Prepare Claude API request using built-in prompt caching with 1 hour TTL
         const systemPrompt = `You are a GBID converter. Use the following database to convert materials to GBID format.\n\nDATABASE (CSV format):\n${csvData}\n\nINSTRUCTIONS:\nGive me a list of GBIDs based on the following format, using my GBID database as data. If there is a footage instead of a qty, input the footage in its place (do not include measurement symbols - for example, 200' should print out as just 200). If there are multiple \"cuts\" or \"rolls\" of an item (namely wire), multiply the length by the amount of cuts/rolls to get the final qty (for example, 2 cuts of 400' of wire would become qty 800, 2 rolls of 500' would be qty 1000). Items are normally input as per item - if an item requests a number of boxes, use the properties column to determine how many qty is in each box, then output the total qty as a multiple of that. If an item has a size, such as 2\" rigid conduit, search for the item first, then the size within the GBID field. Only write notes at the end of the message, do not interrupt the list. Assume standard for all parts unless specified. Use the \"alternate names\" column to find the closest name for items with names that do not match. Read the special notes column for all items before output to determine which part numbers are usually standard or if there are any special instructions. Read through every line and every column regardless of whether or not the item is present in the request. Search online for alternate or slang terms if necessary. Do not hallucinate part numbers if you cannot find them. If you cannot find the item after exhausting all options, write NO BID as the GBID and 1 as the QTY.\n\nGBID[tab]QTY\nGBID[tab]QTY\nGBID[tab]QTY`;
 
         const anthropicPayload = {
@@ -49,7 +49,7 @@ export default async function handler(req, res) {
                 {
                     type: 'text',
                     text: systemPrompt,
-                    cache_control: { type: 'ephemeral' }
+                    cache_control: { type: 'ephemeral', ttl: 3600 }
                 }
             ],
             messages: [
