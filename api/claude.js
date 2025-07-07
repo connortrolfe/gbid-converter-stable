@@ -42,7 +42,7 @@ export default async function handler(req, res) {
 
         const anthropicPayload = {
             model: 'claude-sonnet-4-20250514',
-            max_tokens: 4000,
+            max_tokens: 12000,
             system: [
                 {
                     type: 'text',
