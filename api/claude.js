@@ -47,7 +47,7 @@ export default async function handler(req, res) {
                 {
                     type: 'text',
                     text: systemPrompt,
-                    cache_control: { type: 'ephemeral', ttl: 3600 }
+                    cache_control: { type: 'ephemeral' }
                 }
             ],
             messages: [
